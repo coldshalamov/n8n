@@ -20,7 +20,7 @@ services:
       - key: PORT
         value: "10000"
       - key: N8N_HOST
-        value: n8n-server-pz47.onrender.com
+        value: 0.0.0.0
       - key: N8N_PROTOCOL
         value: https
       - key: WEBHOOK_URL
