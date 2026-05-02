@@ -69,14 +69,17 @@ gh repo create rehab-ops --private --source=. --push
 
 1. render.com → New + → **Blueprint**.
 2. Connect the GitHub repo. Render reads `render.yaml`.
-3. Apply. Render starts provisioning all three services + a 1GB disk for n8n.
+3. Apply. Render starts provisioning all three services.
 4. While they're building:
    - Set the `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` env vars on
      **email-server** and **mcp-server**.
+   - Set the n8n database env vars from Supabase's database connection details:
+     `DB_POSTGRESDB_HOST`, `DB_POSTGRESDB_PORT`, `DB_POSTGRESDB_DATABASE`,
+     `DB_POSTGRESDB_USER`, and `DB_POSTGRESDB_PASSWORD`.
    - The `MCP_API_KEY` for **mcp-server** auto-generates — copy it from the
      env vars panel for OpenClaw.
-   - The `N8N_ENCRYPTION_KEY` auto-generates and stays put — don't lose the
-     n8n disk.
+   - Keep `N8N_ENCRYPTION_KEY` stable. If it changes, n8n cannot decrypt
+     existing saved credentials.
    - n8n derives `N8N_HOST`, `WEBHOOK_URL`, and `N8N_EDITOR_BASE_URL` from
      Render's runtime `RENDER_EXTERNAL_*` values. Do not replace them with
      Render private-network `host`/`hostport` values.
@@ -94,8 +97,9 @@ gh repo create rehab-ops --private --source=. --push
    - n8n: `https://<n8n-service>.onrender.com/healthz`
    - email-server: `https://<email-service>.onrender.com/health`
    - mcp-server: `https://<mcp-service>.onrender.com/health`
-   If n8n restarts and prompts for setup again, the persistent disk is not
-   attached at `/home/node/.n8n`.
+   If n8n restarts and prompts for setup again, check the Supabase Postgres
+   env vars first. Without them, the free service falls back to ephemeral
+   SQLite.
 
 ### 5. Wire the email server into n8n
 
@@ -124,17 +128,16 @@ https://mcp-server-xxx.onrender.com/sse?key=<MCP_API_KEY>
 
 Tools auto-discover. Test with: "What's overdue?"
 
-## Costs (Render starter tier)
+## Costs (free demo tier)
 
 | Service     | Plan    | $/mo |
 |-------------|---------|------|
-| n8n         | Starter | $7   |
-| email-srv   | Starter | $7   |
-| mcp-srv     | Starter | $7   |
-| n8n disk    | 1 GB    | $0.25|
+| n8n         | Free    | $0   |
+| email-srv   | Free    | $0   |
+| mcp-srv     | Free    | $0   |
 | Supabase    | Free    | $0   |
 | Vercel      | Hobby   | $0   |
-| **Total**   |         | ~$22 |
+| **Total**   |         | $0   |
 
 Supabase Free pauses projects after 7 days idle — bump to Pro ($25) once
 this is in daily use, OR rely on the dashboard pinging it.

@@ -5,10 +5,12 @@ import {
   Building2,
   CheckCircle2,
   Clock3,
+  ExternalLink,
   Hammer,
   Route,
   Sparkles,
   TrendingUp,
+  Workflow,
   Zap,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
@@ -16,7 +18,7 @@ import type { ActivityLog, Invoice, Job, Property } from '@/lib/db.types';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { PropertyCard } from '@/components/PropertyCard';
 import { StatCard } from '@/components/StatCard';
-import { daysUntil, money, pct, propertyStatusLabel, relativeDate, signedMoney } from '@/lib/format';
+import { daysUntil, externalUrl, money, pct, propertyStatusLabel, relativeDate, signedMoney } from '@/lib/format';
 
 export const metadata = {
   title: 'Portfolio — RehabOps',
@@ -40,6 +42,7 @@ const ACTIVE_JOB_STATUSES = new Set<Job['status']>([
 
 export default async function PortfolioPage() {
   const supabase = await createClient();
+  const n8nUrl = externalUrl(process.env.NEXT_PUBLIC_N8N_URL);
 
   const [propertiesRes, jobsRes, invoicesRes, activityRes] = await Promise.all([
     supabase
@@ -146,6 +149,27 @@ export default async function PortfolioPage() {
             <MiniMetric label="Automation" value={activity.length ? 'Live' : 'Quiet'} accent />
           </div>
         </div>
+        <div className="relative mt-5 flex flex-wrap items-center gap-2">
+          {n8nUrl ? (
+            <a
+              href={n8nUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-br from-accent to-accent-soft px-3.5 py-2 text-sm font-medium text-bg shadow-glow transition hover:brightness-110"
+            >
+              <Workflow className="size-4" />
+              Open n8n builder
+              <ExternalLink className="size-3.5" />
+            </a>
+          ) : (
+            <div className="rounded-lg bg-warn/10 px-3.5 py-2 text-sm text-warn ring-1 ring-warn/30">
+              Set NEXT_PUBLIC_N8N_URL to show the n8n builder launch button.
+            </div>
+          )}
+          <span className="rounded-lg bg-surface-2 px-3.5 py-2 text-sm text-ink-dim ring-1 ring-line">
+            Wrapper dashboard for owner visibility; n8n remains the automation builder.
+          </span>
+        </div>
       </header>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
@@ -214,7 +238,7 @@ export default async function PortfolioPage() {
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-medium uppercase tracking-wider text-ink-dim">
-                    n8n Pulse
+                    n8n engine room
                   </h2>
                   <p className="mt-1 text-xs text-ink-faint">
                     Last run {activity[0] ? relativeDate(activity[0].created_at) : 'waiting'}
@@ -227,6 +251,17 @@ export default async function PortfolioPage() {
                 <MiniMetric label="Bids" value={jobs.filter((j) => j.status === 'bid_requested' || j.status === 'bid_received').length} />
                 <MiniMetric label="Invoices" value={pendingInvoices.length} accent />
               </div>
+              {n8nUrl && (
+                <a
+                  href={n8nUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-xs font-medium text-ink-dim ring-1 ring-line transition hover:text-ink"
+                >
+                  Open workflows
+                  <ExternalLink className="size-3.5" />
+                </a>
+              )}
             </div>
           </section>
 

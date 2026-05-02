@@ -18,8 +18,7 @@ export default async function LoginPage({
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1549517045-bc93de075e53?w=2400&q=80')",
+            backgroundImage: "url('/images/rehabops-command-mock.png')",
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/85 to-bg/50" />

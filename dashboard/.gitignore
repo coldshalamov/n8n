@@ -4,4 +4,5 @@ node_modules
 .vercel
 .env*.local
 *.log
+dashboard-demo*.png
 .DS_Store

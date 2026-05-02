@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
-import { Home, HardHat, LogOut } from 'lucide-react';
+import { HardHat, Home, LogOut, Workflow } from 'lucide-react';
 import { logout } from '@/app/login/actions';
+import { externalUrl } from '@/lib/format';
 
 const NAV = [
   { href: '/', label: 'Properties', icon: Home, match: (p: string) => p === '/' || p.startsWith('/properties') },
@@ -13,6 +14,7 @@ const NAV = [
 
 export function MobileNav() {
   const path = usePathname();
+  const n8nUrl = externalUrl(process.env.NEXT_PUBLIC_N8N_URL);
   return (
     <header className="md:hidden sticky top-0 z-20 flex h-14 items-center justify-between border-b border-line bg-bg/85 backdrop-blur px-4">
       <Link href="/" className="flex items-center gap-2">
@@ -40,6 +42,17 @@ export function MobileNav() {
             </Link>
           );
         })}
+        {n8nUrl && (
+          <a
+            href={n8nUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open n8n builder"
+            className="grid size-9 place-items-center rounded-lg text-accent-soft hover:text-accent"
+          >
+            <Workflow className="size-4" />
+          </a>
+        )}
         <form action={logout}>
           <button
             type="submit"

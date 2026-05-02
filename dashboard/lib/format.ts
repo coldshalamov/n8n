@@ -110,3 +110,10 @@ export const relativeDate = (iso: string) => {
   if (ms < 7 * day) return `${Math.round(ms / day)}d ago`;
   return date.toLocaleDateString();
 };
+
+export const externalUrl = (url: string | null | undefined) => {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+};

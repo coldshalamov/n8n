@@ -1,9 +1,8 @@
 # Render Blueprint for RehabOps services hosted from this repository.
 #
-# The n8n service intentionally runs on a paid instance with a persistent disk.
-# Without the disk, the image falls back to ephemeral SQLite and re-runs the
-# entire migration stack after every restart, which makes Render health checks
-# flap and destroys workflows/users.
+# n8n stays on the existing free Render image service. Workflow persistence is
+# handled by Supabase Postgres via the DB_* environment variables below, not a
+# paid Render disk.
 
 services:
   - type: web
@@ -16,14 +15,10 @@ services:
       export WEBHOOK_URL="${RENDER_EXTERNAL_URL}/";
       export N8N_EDITOR_BASE_URL="${RENDER_EXTERNAL_URL}/";
       exec n8n start'
-    plan: starter
+    plan: free
     region: oregon
     autoDeploy: true
     healthCheckPath: /healthz
-    disk:
-      name: n8n-data
-      mountPath: /home/node/.n8n
-      sizeGB: 1
     envVars:
       - key: N8N_PORT
         value: "10000"
@@ -34,7 +29,25 @@ services:
       - key: N8N_USER_FOLDER
         value: /home/node/.n8n
       - key: N8N_ENCRYPTION_KEY
-        generateValue: true
+        sync: false
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        sync: false
+      - key: DB_POSTGRESDB_PORT
+        sync: false
+      - key: DB_POSTGRESDB_DATABASE
+        sync: false
+      - key: DB_POSTGRESDB_USER
+        sync: false
+      - key: DB_POSTGRESDB_PASSWORD
+        sync: false
+      - key: DB_POSTGRESDB_SSL_ENABLED
+        value: "true"
+      - key: DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED
+        value: "false"
+      - key: DB_POSTGRESDB_POOL_SIZE
+        value: "2"
       - key: N8N_PROXY_HOPS
         value: "1"
       - key: N8N_RUNNERS_GRANT_TOKEN_TTL
@@ -54,7 +67,7 @@ services:
     name: rehab-ops-email-server
     runtime: docker
     rootDir: email-server
-    plan: starter
+    plan: free
     region: oregon
     autoDeploy: true
     healthCheckPath: /health
@@ -72,7 +85,7 @@ services:
     name: rehab-ops-mcp-server
     runtime: docker
     rootDir: mcp-server
-    plan: starter
+    plan: free
     region: oregon
     autoDeploy: true
     healthCheckPath: /health

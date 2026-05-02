@@ -42,8 +42,9 @@ Owner web + WhatsApp        Contractors web + email
 2. Dashboard: deploy `dashboard/` to Vercel with Supabase URL, anon key, and
    service-role key.
 3. Render: apply `render.yaml`. It creates n8n, email ingestion, and MCP
-   services. The n8n service must stay on a paid plan with a persistent disk at
-   `/home/node/.n8n`; otherwise it re-runs migrations on every restart.
+   services. Keep n8n on the free image service for the demo; point n8n at
+   Supabase Postgres with `DB_POSTGRESDB_*` env vars so workflows and
+   credentials survive restarts without a Render disk.
 4. n8n: import the workflows from `n8n-workflows/`, create a Postgres
    credential named `RehabOps Postgres`, and set outbound webhook env vars.
 5. OpenClaw: connect to `https://<mcp-service>.onrender.com/sse?key=<MCP_API_KEY>`.

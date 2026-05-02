@@ -59,7 +59,7 @@ export default async function PortalHome() {
         <div className="rounded-2xl bg-surface ring-1 ring-line p-10 text-center">
           <h2 className="text-lg font-medium">No jobs yet</h2>
           <p className="mt-1 text-sm text-ink-dim">
-            You'll see assigned jobs here once the owner adds them.
+            You&apos;ll see assigned jobs here once the owner adds them.
           </p>
         </div>
       )}
