@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: n8n-server
+    runtime: image
+    image:
+      url: docker.n8n.io/n8nio/n8n:latest
+    plan: free
+    region: oregon
+    autoDeploy: true
+    healthCheckPath: /healthz
+    envVars:
+      - key: N8N_HOST
+        value: 0.0.0.0
+      - key: N8N_PORT
+        value: 10000
+      - key: N8N_PROTOCOL
+        value: https
+      - key: N8N_USER_FOLDER
+        value: /home/node/.n8n
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      - key: WEBHOOK_URL
+        sync: false
