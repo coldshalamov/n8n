@@ -73,9 +73,12 @@ gh repo create rehab-ops --private --source=. --push
 4. While they're building:
    - Set the `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` env vars on
      **email-server** and **mcp-server**.
-   - Set the n8n database env vars from Supabase's database connection details:
+   - Optional but recommended for persistence: set the n8n database env vars
+     from Supabase's database connection details: `DB_TYPE=postgresdb`,
      `DB_POSTGRESDB_HOST`, `DB_POSTGRESDB_PORT`, `DB_POSTGRESDB_DATABASE`,
-     `DB_POSTGRESDB_USER`, and `DB_POSTGRESDB_PASSWORD`.
+     `DB_POSTGRESDB_USER`, `DB_POSTGRESDB_PASSWORD`,
+     `DB_POSTGRESDB_SSL_ENABLED=true`, and
+     `DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED=false`.
    - The `MCP_API_KEY` for **mcp-server** auto-generates — copy it from the
      env vars panel for OpenClaw.
    - Keep `N8N_ENCRYPTION_KEY` stable. If it changes, n8n cannot decrypt
@@ -97,9 +100,9 @@ gh repo create rehab-ops --private --source=. --push
    - n8n: `https://<n8n-service>.onrender.com/healthz`
    - email-server: `https://<email-service>.onrender.com/health`
    - mcp-server: `https://<mcp-service>.onrender.com/health`
-   If n8n restarts and prompts for setup again, check the Supabase Postgres
-   env vars first. Without them, the free service falls back to ephemeral
-   SQLite.
+   If n8n restarts and prompts for setup again, the service is still using
+   ephemeral image storage. Add the Supabase Postgres env vars above when you
+   are ready for persistent n8n workflows and credentials.
 
 ### 5. Wire the email server into n8n
 

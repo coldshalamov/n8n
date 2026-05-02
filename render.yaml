@@ -1,8 +1,8 @@
 # Render Blueprint for RehabOps services hosted from this repository.
 #
-# n8n stays on the existing free Render image service. Workflow persistence is
-# handled by Supabase Postgres via the DB_* environment variables below, not a
-# paid Render disk.
+# n8n stays on the existing free Render image service. Add Supabase Postgres
+# DB_* environment variables in Render once the database connection details are
+# ready; until then the service stays healthy on the image default storage.
 
 services:
   - type: web
@@ -31,24 +31,6 @@ services:
         value: /home/node/.n8n
       - key: N8N_ENCRYPTION_KEY
         sync: false
-      - key: DB_TYPE
-        value: postgresdb
-      - key: DB_POSTGRESDB_HOST
-        sync: false
-      - key: DB_POSTGRESDB_PORT
-        sync: false
-      - key: DB_POSTGRESDB_DATABASE
-        sync: false
-      - key: DB_POSTGRESDB_USER
-        sync: false
-      - key: DB_POSTGRESDB_PASSWORD
-        sync: false
-      - key: DB_POSTGRESDB_SSL_ENABLED
-        value: "true"
-      - key: DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED
-        value: "false"
-      - key: DB_POSTGRESDB_POOL_SIZE
-        value: "2"
       - key: N8N_PROXY_HOPS
         value: "1"
       - key: N8N_RUNNERS_GRANT_TOKEN_TTL
