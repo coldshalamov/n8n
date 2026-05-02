@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #0a0d12;
+  color: #e8eaed;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px),
+    radial-gradient(1100px 700px at -10% -20%, rgba(249, 115, 22, 0.08), transparent 55%),
+    radial-gradient(900px 600px at 110% 110%, rgba(14, 165, 233, 0.065), transparent 50%);
+  background-size: 32px 32px, 32px 32px, auto, auto;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-color: #0a0d12;
+}
+
+::selection {
+  background: rgba(249, 115, 22, 0.35);
+  color: #fff;
+}
+
+/* Subtle scrollbar in dark theme */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a313d transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #2a313d;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(251, 146, 60, 0.85);
+  outline-offset: 3px;
+}
+
+@layer utilities {
+  .gradient-text {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 45%, #fbbf24 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .ring-line {
+    --tw-ring-color: #232a36;
+  }
+}

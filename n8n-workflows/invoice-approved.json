@@ -1,0 +1,140 @@
+{
+  "name": "Invoice Approved → Update Budget",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "invoice-approved",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger",
+      "name": "Webhook: invoice-approved",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "invoice-approved"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT i.id AS invoice_id, i.amount, i.job_id, j.property_id, p.total_budget, p.total_spent, p.address FROM invoices i LEFT JOIN jobs j ON j.id = i.job_id LEFT JOIN properties p ON p.id = j.property_id WHERE i.id = $1;",
+        "options": { "queryReplacement": "={{ $json.body.invoice_id }}" }
+      },
+      "id": "lookup",
+      "name": "Lookup invoice",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [440, 300],
+      "credentials": {
+        "postgres": { "id": "rehab_ops_db", "name": "RehabOps Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE jobs SET actual_cost = COALESCE(actual_cost, 0) + $1 WHERE id = $2;",
+        "options": { "queryReplacement": "={{ $json.amount }},{{ $json.job_id }}" }
+      },
+      "id": "update_job",
+      "name": "Update job actual",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [680, 200],
+      "credentials": {
+        "postgres": { "id": "rehab_ops_db", "name": "RehabOps Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE properties SET total_spent = COALESCE(total_spent, 0) + $1 WHERE id = $2 RETURNING total_budget, total_spent, address;",
+        "options": { "queryReplacement": "={{ $('Lookup invoice').item.json.amount }},{{ $('Lookup invoice').item.json.property_id }}" }
+      },
+      "id": "update_property",
+      "name": "Update property spent",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [680, 400],
+      "credentials": {
+        "postgres": { "id": "rehab_ops_db", "name": "RehabOps Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "over",
+              "leftValue": "={{ $json.total_spent }}",
+              "rightValue": "={{ $json.total_budget }}",
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "over_budget",
+      "name": "Over budget?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [920, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.OWNER_ALERT_WEBHOOK }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: `⚠️ ${$json.address} is now OVER budget — spent $${$json.total_spent} of $${$json.total_budget}.`, severity: 'warn' }) }}",
+        "options": {}
+      },
+      "id": "alert",
+      "name": "Alert owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1180, 320]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}",
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1180, 500]
+    }
+  ],
+  "connections": {
+    "Webhook: invoice-approved": {
+      "main": [[{ "node": "Lookup invoice", "type": "main", "index": 0 }]]
+    },
+    "Lookup invoice": {
+      "main": [
+        [
+          { "node": "Update job actual", "type": "main", "index": 0 },
+          { "node": "Update property spent", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Update property spent": {
+      "main": [[{ "node": "Over budget?", "type": "main", "index": 0 }]]
+    },
+    "Over budget?": {
+      "main": [
+        [{ "node": "Alert owner", "type": "main", "index": 0 }],
+        [{ "node": "Respond OK", "type": "main", "index": 0 }]
+      ]
+    },
+    "Alert owner": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

@@ -1,0 +1,102 @@
+{
+  "name": "Deadline Reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 8 * * *" }
+          ]
+        }
+      },
+      "id": "trigger",
+      "name": "8am EST daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT j.id, j.title, j.due_date, j.status, c.id AS contractor_id, c.company_name, c.email, p.address, (CURRENT_DATE - j.due_date) AS days_overdue FROM jobs j LEFT JOIN contractors c ON c.id = j.contractor_id LEFT JOIN properties p ON p.id = j.property_id WHERE j.status NOT IN ('paid','complete') AND j.due_date IS NOT NULL AND j.due_date <= CURRENT_DATE + INTERVAL '3 days' ORDER BY j.due_date ASC;",
+        "options": {}
+      },
+      "id": "due_soon",
+      "name": "Jobs due ≤3 days",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": { "id": "rehab_ops_db", "name": "RehabOps Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "overdue",
+              "leftValue": "={{ $json.days_overdue }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is_overdue",
+      "name": "Overdue?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.OWNER_ALERT_WEBHOOK }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: `🚨 OVERDUE: ${$json.title} @ ${$json.address} — ${$json.company_name ?? 'unassigned'} is ${$json.days_overdue} day(s) past due.`, job_id: $json.id }) }}",
+        "options": {}
+      },
+      "id": "escalate",
+      "name": "Escalate to owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [980, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONTRACTOR_REMIND_WEBHOOK }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $json.email, contractor: $json.company_name, subject: `Reminder: ${$json.title} due ${$json.due_date}`, text: `Hi ${$json.company_name},\\n\\nThis is a reminder that \"${$json.title}\" at ${$json.address} is due on ${$json.due_date}.\\n\\nReply or upload progress in the portal.\\n\\nThanks,\\nRehabOps` }) }}",
+        "options": {}
+      },
+      "id": "remind",
+      "name": "Remind contractor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [980, 400]
+    }
+  ],
+  "connections": {
+    "8am EST daily": {
+      "main": [[{ "node": "Jobs due ≤3 days", "type": "main", "index": 0 }]]
+    },
+    "Jobs due ≤3 days": {
+      "main": [[{ "node": "Overdue?", "type": "main", "index": 0 }]]
+    },
+    "Overdue?": {
+      "main": [
+        [{ "node": "Escalate to owner", "type": "main", "index": 0 }],
+        [{ "node": "Remind contractor", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "timezone": "America/New_York" }
+}

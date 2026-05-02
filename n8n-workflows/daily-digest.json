@@ -1,0 +1,108 @@
+{
+  "name": "Daily Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 7 * * *" }
+          ]
+        }
+      },
+      "id": "trigger",
+      "name": "7am EST daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, address, status, total_budget, total_spent, ROUND(CASE WHEN total_budget>0 THEN total_spent::numeric / total_budget * 100 ELSE 0 END) AS pct FROM properties WHERE status NOT IN ('sold') ORDER BY status, address;",
+        "options": {}
+      },
+      "id": "active",
+      "name": "Active properties",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 180],
+      "credentials": {
+        "postgres": { "id": "rehab_ops_db", "name": "RehabOps Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT j.id, j.title, j.due_date, c.company_name, p.address FROM jobs j LEFT JOIN contractors c ON c.id = j.contractor_id LEFT JOIN properties p ON p.id = j.property_id WHERE j.due_date < CURRENT_DATE AND j.status NOT IN ('paid','complete') ORDER BY j.due_date ASC;",
+        "options": {}
+      },
+      "id": "overdue",
+      "name": "Overdue jobs",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 320],
+      "credentials": {
+        "postgres": { "id": "rehab_ops_db", "name": "RehabOps Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT i.id, i.amount, i.invoice_number, c.company_name, j.title FROM invoices i LEFT JOIN contractors c ON c.id = i.contractor_id LEFT JOIN jobs j ON j.id = i.job_id WHERE i.status = 'pending' ORDER BY i.submitted_at DESC;",
+        "options": {}
+      },
+      "id": "pending",
+      "name": "Pending invoices",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [460, 460],
+      "credentials": {
+        "postgres": { "id": "rehab_ops_db", "name": "RehabOps Postgres" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const active = $('Active properties').all().map(i => i.json);\nconst overdue = $('Overdue jobs').all().map(i => i.json);\nconst pending = $('Pending invoices').all().map(i => i.json);\n\nconst lines = [];\nlines.push(`*RehabOps daily digest — ${new Date().toLocaleDateString()}*`);\nlines.push('');\nlines.push(`*${active.length} active properties*`);\nfor (const p of active.slice(0, 10)) {\n  lines.push(`  • ${p.address} — ${p.status} (${p.pct}% of budget)`);\n}\nlines.push('');\nlines.push(`*${overdue.length} overdue jobs*`);\nfor (const j of overdue.slice(0, 10)) {\n  lines.push(`  • ${j.title} @ ${j.address} (${j.company_name ?? 'unassigned'}) — was due ${j.due_date}`);\n}\nlines.push('');\nlines.push(`*${pending.length} pending invoices*`);\nfor (const i of pending.slice(0, 10)) {\n  lines.push(`  • ${i.company_name} — $${i.amount} (${i.invoice_number ?? 'no #'}) for ${i.title}`);\n}\n\nreturn [{ json: { text: lines.join('\\n'), counts: { active: active.length, overdue: overdue.length, pending: pending.length } } }];"
+      },
+      "id": "format",
+      "name": "Format digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 320]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DIGEST_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.text, counts: $json.counts }) }}",
+        "options": {}
+      },
+      "id": "send",
+      "name": "Send to owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 320]
+    }
+  ],
+  "connections": {
+    "7am EST daily": {
+      "main": [[{ "node": "Active properties", "type": "main", "index": 0 }]]
+    },
+    "Active properties": {
+      "main": [[{ "node": "Overdue jobs", "type": "main", "index": 0 }]]
+    },
+    "Overdue jobs": {
+      "main": [[{ "node": "Pending invoices", "type": "main", "index": 0 }]]
+    },
+    "Pending invoices": {
+      "main": [[{ "node": "Format digest", "type": "main", "index": 0 }]]
+    },
+    "Format digest": {
+      "main": [[{ "node": "Send to owner", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "timezone": "America/New_York" }
+}

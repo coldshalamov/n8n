@@ -1,23 +1,87 @@
+# Render Blueprint for RehabOps services hosted from this repository.
+#
+# The n8n service intentionally runs on a paid instance with a persistent disk.
+# Without the disk, the image falls back to ephemeral SQLite and re-runs the
+# entire migration stack after every restart, which makes Render health checks
+# flap and destroys workflows/users.
+
 services:
   - type: web
     name: n8n-server
     runtime: image
     image:
       url: docker.n8n.io/n8nio/n8n:latest
-    plan: free
+    dockerCommand: >-
+      /bin/sh -c 'export N8N_HOST="${RENDER_EXTERNAL_HOSTNAME:-0.0.0.0}";
+      export WEBHOOK_URL="${RENDER_EXTERNAL_URL}/";
+      export N8N_EDITOR_BASE_URL="${RENDER_EXTERNAL_URL}/";
+      exec n8n start'
+    plan: starter
     region: oregon
     autoDeploy: true
     healthCheckPath: /healthz
+    disk:
+      name: n8n-data
+      mountPath: /home/node/.n8n
+      sizeGB: 1
     envVars:
-      - key: N8N_HOST
-        value: 0.0.0.0
       - key: N8N_PORT
-        value: 10000
+        value: "10000"
+      - key: PORT
+        value: "10000"
       - key: N8N_PROTOCOL
         value: https
       - key: N8N_USER_FOLDER
         value: /home/node/.n8n
       - key: N8N_ENCRYPTION_KEY
         generateValue: true
-      - key: WEBHOOK_URL
+      - key: N8N_PROXY_HOPS
+        value: "1"
+      - key: N8N_RUNNERS_GRANT_TOKEN_TTL
+        value: "300"
+      - key: GENERIC_TIMEZONE
+        value: America/New_York
+      - key: TZ
+        value: America/New_York
+      - key: DIGEST_WEBHOOK_URL
         sync: false
+      - key: OWNER_ALERT_WEBHOOK
+        sync: false
+      - key: CONTRACTOR_REMIND_WEBHOOK
+        sync: false
+
+  - type: web
+    name: rehab-ops-email-server
+    runtime: docker
+    rootDir: email-server
+    plan: starter
+    region: oregon
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: N8N_NEW_EMAIL_WEBHOOK
+        sync: false
+
+  - type: web
+    name: rehab-ops-mcp-server
+    runtime: docker
+    rootDir: mcp-server
+    plan: starter
+    region: oregon
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: MCP_API_KEY
+        generateValue: true

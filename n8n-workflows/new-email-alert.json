@@ -1,0 +1,82 @@
+{
+  "name": "New Email → Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-email",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "trigger",
+      "name": "Webhook: new-email",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "new-email"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "urgent_type",
+              "leftValue": "={{ $json.body.type }}",
+              "rightValue": "bid|invoice|lien_waiver",
+              "operator": { "type": "string", "operation": "regex" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is_urgent",
+      "name": "Urgent type?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.OWNER_ALERT_WEBHOOK }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: `📨 New ${$json.body.type} from ${$json.body.from} (${$json.body.attachments} attachment(s)).`, type: $json.body.type, property_id: $json.body.property_id, contractor_id: $json.body.contractor_id }) }}",
+        "options": {}
+      },
+      "id": "notify",
+      "name": "Notify owner",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [{ "name": "result", "value": "queued for digest" }]
+        },
+        "options": {}
+      },
+      "id": "skip",
+      "name": "Hold for digest",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [700, 400]
+    }
+  ],
+  "connections": {
+    "Webhook: new-email": {
+      "main": [[{ "node": "Urgent type?", "type": "main", "index": 0 }]]
+    },
+    "Urgent type?": {
+      "main": [
+        [{ "node": "Notify owner", "type": "main", "index": 0 }],
+        [{ "node": "Hold for digest", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
