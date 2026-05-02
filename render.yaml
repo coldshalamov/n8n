@@ -10,11 +10,6 @@ services:
     runtime: image
     image:
       url: docker.n8n.io/n8nio/n8n:latest
-    dockerCommand: >-
-      /bin/sh -c 'export N8N_HOST="${RENDER_EXTERNAL_HOSTNAME:-0.0.0.0}";
-      export WEBHOOK_URL="${RENDER_EXTERNAL_URL}/";
-      export N8N_EDITOR_BASE_URL="${RENDER_EXTERNAL_URL}/";
-      exec n8n start'
     plan: free
     region: oregon
     autoDeploy: true
@@ -24,8 +19,14 @@ services:
         value: "10000"
       - key: PORT
         value: "10000"
+      - key: N8N_HOST
+        value: n8n-server-pz47.onrender.com
       - key: N8N_PROTOCOL
         value: https
+      - key: WEBHOOK_URL
+        value: https://n8n-server-pz47.onrender.com/
+      - key: N8N_EDITOR_BASE_URL
+        value: https://n8n-server-pz47.onrender.com/
       - key: N8N_USER_FOLDER
         value: /home/node/.n8n
       - key: N8N_ENCRYPTION_KEY
