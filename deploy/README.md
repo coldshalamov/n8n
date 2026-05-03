@@ -54,7 +54,18 @@ gh repo create rehab-ops --private --source=. --push
 
 (or do it via GitHub.com if `gh` isn't installed.)
 
-### 3. Vercel — dashboard (2 min)
+### 3. Dashboard wrapper
+
+For the quickest demo, use the free Render service named
+`rehab-ops-dashboard`; its public demo is at:
+
+```
+https://rehab-ops-dashboard.onrender.com/demo
+```
+
+That wrapper links out to the n8n builder at `NEXT_PUBLIC_N8N_URL`.
+
+If you prefer Vercel later:
 
 1. vercel.com → Add New → Project → import your repo.
 2. **Root directory**: `dashboard`

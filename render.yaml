@@ -6,6 +6,26 @@
 
 services:
   - type: web
+    name: rehab-ops-dashboard
+    runtime: node
+    rootDir: dashboard
+    plan: free
+    region: oregon
+    autoDeploy: true
+    buildCommand: corepack enable && corepack pnpm install --ignore-workspace --frozen-lockfile && corepack pnpm build
+    startCommand: corepack pnpm start --hostname 0.0.0.0 --port $PORT
+    healthCheckPath: /demo
+    envVars:
+      - key: NEXT_PUBLIC_N8N_URL
+        value: https://n8n-server-pz47.onrender.com
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://example.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        value: demo-placeholder
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+  - type: web
     name: n8n-server
     runtime: image
     image:

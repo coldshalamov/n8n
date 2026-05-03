@@ -40,7 +40,8 @@ Owner web + WhatsApp        Contractors web + email
 
 1. Supabase: run `schema.sql`, `seed.sql`, then `schema-phase2.sql`.
 2. Dashboard: deploy `dashboard/` to Vercel with Supabase URL, anon key, and
-   service-role key.
+   service-role key, or use the free `rehab-ops-dashboard` Render service from
+   `render.yaml` for the public demo wrapper.
 3. Render: apply `render.yaml`. It creates n8n, email ingestion, and MCP
    services on free plans. Keep n8n on the free image service for the demo;
    when you have the Supabase database connection details ready, add `DB_TYPE`
