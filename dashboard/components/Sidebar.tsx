@@ -97,16 +97,14 @@ export function Sidebar({ userEmail }: { userEmail: string | null }) {
           );
         })}
         {n8nUrl && (
-          <a
-            href={n8nUrl}
-            target="_blank"
-            rel="noreferrer"
+          <Link
+            href="/n8n"
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-dim transition-colors hover:bg-surface/60 hover:text-ink"
           >
             <Workflow className="size-4" />
             n8n Builder
             <ExternalLink className="ml-auto size-3 text-ink-faint" />
-          </a>
+          </Link>
         )}
       </nav>
 

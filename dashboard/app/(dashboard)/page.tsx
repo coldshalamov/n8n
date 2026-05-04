@@ -176,9 +176,7 @@ export default async function PortfolioPage({
               <NewPropertyButton />
               {n8nUrl ? (
                 <a
-                  href={n8nUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                  href="/n8n"
                   className="inline-flex items-center gap-2 rounded-lg bg-surface-2 px-3.5 py-2 text-sm font-medium text-ink-dim ring-1 ring-line transition-colors hover:bg-surface-3 hover:text-ink"
                 >
                   <Workflow className="size-4" />

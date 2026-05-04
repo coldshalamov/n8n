@@ -115,15 +115,14 @@ export function MobileNav({ activity = [] }: { activity?: ActivityLog[] }) {
                 );
               })}
               {n8nUrl && (
-                <a
-                  href={n8nUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                <Link
+                  href="/n8n"
+                  onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ink-dim hover:bg-surface-2/60 hover:text-ink"
                 >
                   <Workflow className="size-4" />
                   n8n Builder
-                </a>
+                </Link>
               )}
             </nav>
             <div className="absolute inset-x-4 bottom-4 border-t border-line pt-3">

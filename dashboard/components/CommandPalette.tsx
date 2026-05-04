@@ -129,7 +129,7 @@ export function CommandPaletteRoot({ properties, contractors }: Props) {
                   <PItem
                     onSelect={() => {
                       setOpen(false);
-                      window.open(n8nUrl, '_blank');
+                      router.push('/n8n');
                     }}
                     icon={<Workflow className="size-4" />}
                   >

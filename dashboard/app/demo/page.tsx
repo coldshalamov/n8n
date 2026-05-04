@@ -115,16 +115,14 @@ export default function DemoPage() {
                 </span>
               </Link>
               <div className="ml-auto hidden shrink-0 items-center gap-2 sm:flex">
-                <a
-                  href={n8nUrl}
-                  target="_blank"
-                  rel="noreferrer"
+                <Link
+                  href="/n8n"
                   className="inline-flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-bg shadow-glow transition hover:brightness-110"
                 >
                   <Workflow className="size-4" />
                   n8n Builder
                   <ExternalLink className="size-3.5" />
-                </a>
+                </Link>
                 <Link
                   href="/login"
                   className="hidden rounded-lg bg-surface/80 px-3 py-2 text-sm text-ink-dim ring-1 ring-line backdrop-blur transition hover:text-ink sm:inline-flex"
@@ -180,15 +178,13 @@ export default function DemoPage() {
                 </div>
               ))}
             </div>
-            <a
-              href={n8nUrl}
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              href="/n8n"
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-sm font-medium text-ink ring-1 ring-line transition hover:bg-surface"
             >
               Open workflow canvas
               <ExternalLink className="size-3.5" />
-            </a>
+            </Link>
           </aside>
         </div>
       </section>

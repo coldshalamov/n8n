@@ -1,8 +1,9 @@
 # Render Blueprint for RehabOps services hosted from this repository.
 #
-# n8n stays on the existing free Render image service. Add Supabase Postgres
-# DB_* environment variables in Render once the database connection details are
-# ready; until then the service stays healthy on the image default storage.
+# n8n stays on the existing free Render image service. For a reliable demo,
+# wire it to Supabase Postgres with DB_* environment variables in Render.
+# Without DB_* values, n8n falls back to container-local SQLite and can be
+# brittle during Render free-tier cold starts.
 
 services:
   - type: web
@@ -38,7 +39,7 @@ services:
     name: n8n-server
     runtime: image
     image:
-      url: docker.n8n.io/n8nio/n8n:1.118.1
+      url: docker.n8n.io/n8nio/n8n:1.123.17
     plan: free
     region: oregon
     autoDeploy: true
@@ -62,6 +63,8 @@ services:
         sync: false
       - key: N8N_PROXY_HOPS
         value: "1"
+      - key: DB_SQLITE_POOL_SIZE
+        value: "5"
       - key: GENERIC_TIMEZONE
         value: America/New_York
       - key: TZ
