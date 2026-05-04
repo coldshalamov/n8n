@@ -198,55 +198,119 @@ export default async function ReportsPage() {
             No properties yet.
           </div>
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-line text-left text-[10px] uppercase tracking-wider text-ink-faint">
-                <th className="px-5 py-3 font-medium">Property</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium text-right">Purchase</th>
-                <th className="px-5 py-3 font-medium text-right">Budget / Spent</th>
-                <th className="px-5 py-3 font-medium text-right">Sale</th>
-                <th className="px-5 py-3 font-medium text-right">Margin</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Mobile: stacked card list */}
+            <div className="divide-y divide-line md:hidden">
               {rows.map(({ p, purchase, budget, spent, sale, margin }) => (
-                <tr
+                <Link
                   key={p.id}
-                  className="border-b border-line/60 last:border-b-0 transition-colors hover:bg-surface-2/40"
+                  href={`/properties/${p.id}`}
+                  className="block px-5 py-4 transition-colors hover:bg-surface-2/40"
                 >
-                  <td className="px-5 py-3">
-                    <Link href={`/properties/${p.id}`} className="text-sm text-ink hover:underline">
-                      {p.address}
-                    </Link>
-                    <div className="text-xs text-ink-faint">{p.city ?? ''}</div>
-                  </td>
-                  <td className="px-5 py-3">
-                    <PropertyStatusBadge status={p.status} />
-                  </td>
-                  <td className="num px-5 py-3 text-right text-sm">{money(purchase)}</td>
-                  <td className="num px-5 py-3 text-right text-sm">
-                    <div>{money(p.status === 'sold' ? spent : budget)}</div>
-                    <div className="text-xs text-ink-faint">
-                      {p.status === 'sold'
-                        ? `actual`
-                        : `${pct(spent, budget)}% spent`}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-ink">{p.address}</div>
+                      <div className="text-xs text-ink-faint">{p.city ?? ''}</div>
                     </div>
-                  </td>
-                  <td className="num px-5 py-3 text-right text-sm">{money(sale)}</td>
-                  <td
-                    className={`num px-5 py-3 text-right text-sm font-semibold ${
-                      margin >= 0 ? 'text-ok' : 'text-bad'
-                    }`}
-                  >
-                    {margin >= 0 ? <ArrowUp className="inline size-3" /> : <ArrowDown className="inline size-3" />}
-                    {' '}
-                    {signedMoney(margin)}
-                  </td>
-                </tr>
+                    <PropertyStatusBadge status={p.status} />
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <div className="uppercase tracking-wider text-ink-faint">Purchase</div>
+                      <div className="num mt-0.5 text-ink">{money(purchase)}</div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-ink-faint">
+                        {p.status === 'sold' ? 'Spent' : 'Budget'}
+                      </div>
+                      <div className="num mt-0.5 text-ink">
+                        {money(p.status === 'sold' ? spent : budget)}
+                        {p.status !== 'sold' && (
+                          <span className="ml-1 text-[10px] text-ink-faint">
+                            · {pct(spent, budget)}% used
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-ink-faint">Sale</div>
+                      <div className="num mt-0.5 text-ink">{money(sale)}</div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-ink-faint">Margin</div>
+                      <div
+                        className={`num mt-0.5 font-semibold ${
+                          margin >= 0 ? 'text-ok' : 'text-bad'
+                        }`}
+                      >
+                        {margin >= 0 ? (
+                          <ArrowUp className="inline size-3" />
+                        ) : (
+                          <ArrowDown className="inline size-3" />
+                        )}{' '}
+                        {signedMoney(margin)}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
               ))}
-            </tbody>
-          </table>
+            </div>
+            {/* Desktop: table */}
+            <div
+              className="hidden overflow-x-auto md:block"
+              style={{ overscrollBehaviorX: 'contain' }}
+            >
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-line text-left text-[10px] uppercase tracking-wider text-ink-faint">
+                    <th className="px-5 py-3 font-medium">Property</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 font-medium text-right">Purchase</th>
+                    <th className="px-5 py-3 font-medium text-right">Budget / Spent</th>
+                    <th className="px-5 py-3 font-medium text-right">Sale</th>
+                    <th className="px-5 py-3 font-medium text-right">Margin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(({ p, purchase, budget, spent, sale, margin }) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-line/60 last:border-b-0 transition-colors hover:bg-surface-2/40"
+                    >
+                      <td className="px-5 py-3">
+                        <Link href={`/properties/${p.id}`} className="text-sm text-ink hover:underline">
+                          {p.address}
+                        </Link>
+                        <div className="text-xs text-ink-faint">{p.city ?? ''}</div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <PropertyStatusBadge status={p.status} />
+                      </td>
+                      <td className="num px-5 py-3 text-right text-sm">{money(purchase)}</td>
+                      <td className="num px-5 py-3 text-right text-sm">
+                        <div>{money(p.status === 'sold' ? spent : budget)}</div>
+                        <div className="text-xs text-ink-faint">
+                          {p.status === 'sold'
+                            ? `actual`
+                            : `${pct(spent, budget)}% spent`}
+                        </div>
+                      </td>
+                      <td className="num px-5 py-3 text-right text-sm">{money(sale)}</td>
+                      <td
+                        className={`num px-5 py-3 text-right text-sm font-semibold ${
+                          margin >= 0 ? 'text-ok' : 'text-bad'
+                        }`}
+                      >
+                        {margin >= 0 ? <ArrowUp className="inline size-3" /> : <ArrowDown className="inline size-3" />}
+                        {' '}
+                        {signedMoney(margin)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
 

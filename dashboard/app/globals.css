@@ -13,6 +13,15 @@ body {
   font-feature-settings: 'cv11', 'ss01', 'ss03';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Lock horizontal axis: no trackpad rubber-band, no stray scrollbar from
+     overflowing decorations (shadows, gradients). Vertical scroll stays. */
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+
+html {
+  /* Belt-and-suspenders against the trackpad two-finger swipe gesture. */
+  overscroll-behavior: none;
 }
 
 body {

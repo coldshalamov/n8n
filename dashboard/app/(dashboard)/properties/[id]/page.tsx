@@ -102,7 +102,7 @@ export default async function PropertyDetailPage({
 
   return (
     <div className="space-y-8 animate-fade-up">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink"
@@ -110,7 +110,7 @@ export default async function PropertyDetailPage({
           <ArrowLeft className="size-3.5" />
           Portfolio
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <RequestBidsButton propertyId={property.id} contractors={contractorOptions} />
           <NewJobButton
             properties={allProperties}

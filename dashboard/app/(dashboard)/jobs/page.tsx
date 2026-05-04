@@ -157,99 +157,192 @@ export default async function JobsPage({
         })}
       </div>
 
-      <section className="overflow-hidden rounded-2xl bg-surface ring-1 ring-line shadow-card">
-        {filtered.length === 0 ? (
-          <div className="p-10 text-center text-sm text-ink-faint">
-            No jobs match. Adjust filters or create a new job.
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-line text-left text-[10px] uppercase tracking-wider text-ink-faint">
-                <th className="px-5 py-3 font-medium">Job</th>
-                <th className="px-5 py-3 font-medium">Property</th>
-                <th className="px-5 py-3 font-medium">Contractor</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium text-right">Cost</th>
-                <th className="px-5 py-3 font-medium">Due</th>
-                <th className="px-5 py-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((j) => {
-                const p = j.property_id ? propertyById.get(j.property_id) : null;
-                const c = j.contractor_id ? contractorById.get(j.contractor_id) : null;
-                const overdue =
-                  j.status !== 'complete' && j.status !== 'paid' && j.due_date && (daysUntil(j.due_date) ?? 0) < 0;
-                return (
-                  <tr
-                    key={j.id}
-                    className="border-b border-line/60 transition-colors last:border-b-0 hover:bg-surface-2/50"
-                  >
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2">
+      {filtered.length === 0 ? (
+        <section className="rounded-2xl bg-surface p-10 text-center text-sm text-ink-faint ring-1 ring-line shadow-card">
+          No jobs match. Adjust filters or create a new job.
+        </section>
+      ) : (
+        <>
+          {/* Mobile / tablet: card-stacked list */}
+          <section className="space-y-3 md:hidden">
+            {filtered.map((j) => {
+              const p = j.property_id ? propertyById.get(j.property_id) : null;
+              const c = j.contractor_id ? contractorById.get(j.contractor_id) : null;
+              const overdue =
+                j.status !== 'complete' && j.status !== 'paid' && j.due_date && (daysUntil(j.due_date) ?? 0) < 0;
+              return (
+                <div
+                  key={j.id}
+                  className="rounded-2xl bg-surface p-4 ring-1 ring-line shadow-card"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-ink">{j.title}</span>
                         <TradePill trade={j.trade} />
                       </div>
                       {j.description && (
-                        <div className="mt-0.5 line-clamp-1 text-xs text-ink-faint">
+                        <div className="mt-1 line-clamp-2 text-xs text-ink-faint">
                           {j.description}
                         </div>
                       )}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-ink-dim">
-                      {p ? (
-                        <Link href={`/properties/${p.id}`} className="hover:text-ink">
-                          {p.address}
-                        </Link>
-                      ) : (
-                        <span className="text-ink-faint">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-ink-dim">
-                      {c ? (
-                        <Link href={`/contractors/${c.id}`} className="hover:text-ink">
-                          {c.company_name}
-                        </Link>
-                      ) : (
-                        <span className="text-ink-faint">— Unassigned</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3">
-                      <JobStatusMenu jobId={j.id} status={j.status} />
-                    </td>
-                    <td className="num px-5 py-3 text-right text-sm">
-                      <div className="text-ink">
+                    </div>
+                    <EditJobButton
+                      job={j}
+                      properties={properties}
+                      contractors={contractors}
+                    />
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line/60 pt-3 text-xs">
+                    <div>
+                      <div className="uppercase tracking-wider text-ink-faint">Property</div>
+                      <div className="mt-0.5 truncate">
+                        {p ? (
+                          <Link href={`/properties/${p.id}`} className="text-ink-dim hover:text-ink">
+                            {p.address}
+                          </Link>
+                        ) : (
+                          <span className="text-ink-faint">—</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-ink-faint">Contractor</div>
+                      <div className="mt-0.5 truncate">
+                        {c ? (
+                          <Link href={`/contractors/${c.id}`} className="text-ink-dim hover:text-ink">
+                            {c.company_name}
+                          </Link>
+                        ) : (
+                          <span className="text-ink-faint">— Unassigned</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-ink-faint">Cost</div>
+                      <div className="num mt-0.5 text-ink">
                         {money(j.actual_cost ?? j.estimated_cost)}
-                      </div>
-                      <div className="text-[10px] text-ink-faint">
-                        {j.actual_cost != null ? 'actual' : 'estimated'}
-                      </div>
-                    </td>
-                    <td className={`px-5 py-3 text-xs ${overdue ? 'text-warn' : 'text-ink-faint'}`}>
-                      {j.due_date ? (
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="size-3" />
-                          {formatDue(j.due_date)}
+                        <span className="ml-1 text-[10px] text-ink-faint">
+                          {j.actual_cost != null ? 'actual' : 'est'}
                         </span>
-                      ) : (
-                        <span>{jobStatusLabel(j.status)}</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <EditJobButton
-                        job={j}
-                        properties={properties}
-                        contractors={contractors}
-                      />
-                    </td>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="uppercase tracking-wider text-ink-faint">Due</div>
+                      <div
+                        className={`mt-0.5 ${overdue ? 'text-warn' : 'text-ink-dim'}`}
+                      >
+                        {j.due_date ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="size-3" />
+                            {formatDue(j.due_date)}
+                          </span>
+                        ) : (
+                          <span className="text-ink-faint">—</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 border-t border-line/60 pt-3">
+                    <JobStatusMenu jobId={j.id} status={j.status} />
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+
+          {/* Desktop: table */}
+          <section className="hidden overflow-hidden rounded-2xl bg-surface ring-1 ring-line shadow-card md:block">
+            <div className="overflow-x-auto" style={{ overscrollBehaviorX: 'contain' }}>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-line text-left text-[10px] uppercase tracking-wider text-ink-faint">
+                    <th className="px-5 py-3 font-medium">Job</th>
+                    <th className="px-5 py-3 font-medium">Property</th>
+                    <th className="px-5 py-3 font-medium">Contractor</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 font-medium text-right">Cost</th>
+                    <th className="px-5 py-3 font-medium">Due</th>
+                    <th className="px-5 py-3 font-medium" />
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {filtered.map((j) => {
+                    const p = j.property_id ? propertyById.get(j.property_id) : null;
+                    const c = j.contractor_id ? contractorById.get(j.contractor_id) : null;
+                    const overdue =
+                      j.status !== 'complete' && j.status !== 'paid' && j.due_date && (daysUntil(j.due_date) ?? 0) < 0;
+                    return (
+                      <tr
+                        key={j.id}
+                        className="border-b border-line/60 transition-colors last:border-b-0 hover:bg-surface-2/50"
+                      >
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-ink">{j.title}</span>
+                            <TradePill trade={j.trade} />
+                          </div>
+                          {j.description && (
+                            <div className="mt-0.5 line-clamp-1 text-xs text-ink-faint">
+                              {j.description}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-sm text-ink-dim">
+                          {p ? (
+                            <Link href={`/properties/${p.id}`} className="hover:text-ink">
+                              {p.address}
+                            </Link>
+                          ) : (
+                            <span className="text-ink-faint">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-sm text-ink-dim">
+                          {c ? (
+                            <Link href={`/contractors/${c.id}`} className="hover:text-ink">
+                              {c.company_name}
+                            </Link>
+                          ) : (
+                            <span className="text-ink-faint">— Unassigned</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3">
+                          <JobStatusMenu jobId={j.id} status={j.status} />
+                        </td>
+                        <td className="num px-5 py-3 text-right text-sm">
+                          <div className="text-ink">
+                            {money(j.actual_cost ?? j.estimated_cost)}
+                          </div>
+                          <div className="text-[10px] text-ink-faint">
+                            {j.actual_cost != null ? 'actual' : 'estimated'}
+                          </div>
+                        </td>
+                        <td className={`px-5 py-3 text-xs ${overdue ? 'text-warn' : 'text-ink-faint'}`}>
+                          {j.due_date ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Calendar className="size-3" />
+                              {formatDue(j.due_date)}
+                            </span>
+                          ) : (
+                            <span>{jobStatusLabel(j.status)}</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <EditJobButton
+                            job={j}
+                            properties={properties}
+                            contractors={contractors}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }
