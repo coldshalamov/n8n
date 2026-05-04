@@ -43,7 +43,7 @@ services:
     plan: free
     region: oregon
     autoDeploy: true
-    healthCheckPath: /
+    healthCheckPath: /healthz
     envVars:
       - key: N8N_PORT
         value: "10000"
