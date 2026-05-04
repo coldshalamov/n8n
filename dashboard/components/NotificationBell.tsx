@@ -28,8 +28,9 @@ export function NotificationBell({ initial }: { initial: ActivityLog[] }) {
     } catch {
       return;
     }
+    const channelName = `activity_log_stream_${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel('activity_log_stream')
+      .channel(channelName)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'activity_log' },
@@ -39,7 +40,7 @@ export function NotificationBell({ initial }: { initial: ActivityLog[] }) {
       )
       .subscribe();
     return () => {
-      supabase?.removeChannel(channel);
+      void supabase?.removeChannel(channel);
     };
   }, []);
 
