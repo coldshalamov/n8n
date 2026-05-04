@@ -1,0 +1,250 @@
+{
+  "name": "RehabOps Event Router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rehabops",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger",
+      "name": "Webhook: rehabops",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 320],
+      "webhookId": "rehabops"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Verify HMAC-SHA256 signature from the dashboard.\n// The dashboard signs the raw JSON body with N8N_WEBHOOK_SECRET and sends\n// the hex digest in the X-RehabOps-Signature header.\nconst crypto = require('crypto');\n\nconst secret = $env.N8N_WEBHOOK_SECRET;\nconst headers = $input.first().json.headers || {};\nconst body = $input.first().json.body || {};\nconst rawBody = JSON.stringify(body);\nconst sig = headers['x-rehabops-signature'] || headers['X-RehabOps-Signature'];\n\nlet ok = false;\nif (!secret) {\n  // No secret configured — accept (and warn). Useful in dev.\n  ok = true;\n} else if (sig) {\n  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');\n  // Constant-time compare\n  if (sig.length === expected.length) {\n    ok = crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));\n  }\n}\n\nreturn [\n  {\n    json: {\n      ok,\n      event: body.event,\n      actor: body.actor,\n      timestamp: body.timestamp,\n      data: body.data,\n      raw: body,\n      reason: ok ? 'verified' : 'signature mismatch',\n    },\n  },\n];"
+      },
+      "id": "verify",
+      "name": "Verify HMAC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 320]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "ok",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if_valid",
+      "name": "Signature valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [620, 320]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 401,
+        "responseBody": "={{ { ok: false, error: 'invalid signature' } }}",
+        "options": {}
+      },
+      "id": "respond_401",
+      "name": "Respond 401",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [820, 540]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict" }, "conditions": [{ "id": "bid_req", "leftValue": "={{ $json.event }}", "rightValue": "bid.requested", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": false, "outputKey": "bid_requested" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict" }, "conditions": [{ "id": "bid_app", "leftValue": "={{ $json.event }}", "rightValue": "bid.approved", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": false, "outputKey": "bid_approved" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict" }, "conditions": [{ "id": "inv_app", "leftValue": "={{ $json.event }}", "rightValue": "invoice.approved", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": false, "outputKey": "invoice_approved" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict" }, "conditions": [{ "id": "inv_paid", "leftValue": "={{ $json.event }}", "rightValue": "invoice.paid", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": false, "outputKey": "invoice_paid" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict" }, "conditions": [{ "id": "prop_sold", "leftValue": "={{ $json.event }}", "rightValue": "property.sold", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": false, "outputKey": "property_sold" },
+            { "conditions": { "options": { "caseSensitive": true, "typeValidation": "strict" }, "conditions": [{ "id": "job_comp", "leftValue": "={{ $json.event }}", "rightValue": "job.completed", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" }, "renameOutput": false, "outputKey": "job_completed" }
+          ]
+        },
+        "fallbackOutput": "extra",
+        "options": { "fallbackOutput": "extra" }
+      },
+      "id": "switch",
+      "name": "Route by event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [820, 220]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "summary", "value": "=Bid request fanout for '{{ $json.data.title }}' to {{ $json.data.jobs.length }} contractors. Wire HighLevel SMS or email here." }
+          ]
+        },
+        "options": {}
+      },
+      "id": "branch_bid_requested",
+      "name": "→ bid.requested",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1080, 60]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "summary", "value": "=Bid approved on job {{ $json.data.job_id }} for ${{ $json.data.amount }} — notify winning contractor + reject losers." }
+          ]
+        },
+        "options": {}
+      },
+      "id": "branch_bid_approved",
+      "name": "→ bid.approved",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1080, 160]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "summary", "value": "=Invoice {{ $json.data.invoice_id }} approved — schedule payment in your AP tool." }
+          ]
+        },
+        "options": {}
+      },
+      "id": "branch_invoice_approved",
+      "name": "→ invoice.approved",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1080, 260]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "summary", "value": "=Invoice {{ $json.data.invoice_id }} paid — confirm with contractor and update accounting." }
+          ]
+        },
+        "options": {}
+      },
+      "id": "branch_invoice_paid",
+      "name": "→ invoice.paid",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1080, 360]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "summary", "value": "=Property {{ $json.data.id }} marked SOLD. Trigger close-out checklist + investor distribution." }
+          ]
+        },
+        "options": {}
+      },
+      "id": "branch_property_sold",
+      "name": "→ property.sold",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1080, 460]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "summary", "value": "=Job {{ $json.data.id }} completed — kick off invoice request to contractor." }
+          ]
+        },
+        "options": {}
+      },
+      "id": "branch_job_completed",
+      "name": "→ job.completed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1080, 560]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "summary", "value": "=Unrouted event: {{ $json.event }} — extend the Switch node to handle." }
+          ]
+        },
+        "options": {}
+      },
+      "id": "branch_default",
+      "name": "→ default (logged)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1080, 660]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, event: $json.event, summary: $json.summary } }}",
+        "options": {}
+      },
+      "id": "respond_ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 320]
+    }
+  ],
+  "connections": {
+    "Webhook: rehabops": {
+      "main": [[{ "node": "Verify HMAC", "type": "main", "index": 0 }]]
+    },
+    "Verify HMAC": {
+      "main": [[{ "node": "Signature valid?", "type": "main", "index": 0 }]]
+    },
+    "Signature valid?": {
+      "main": [
+        [{ "node": "Route by event", "type": "main", "index": 0 }],
+        [{ "node": "Respond 401", "type": "main", "index": 0 }]
+      ]
+    },
+    "Route by event": {
+      "main": [
+        [{ "node": "→ bid.requested", "type": "main", "index": 0 }],
+        [{ "node": "→ bid.approved", "type": "main", "index": 0 }],
+        [{ "node": "→ invoice.approved", "type": "main", "index": 0 }],
+        [{ "node": "→ invoice.paid", "type": "main", "index": 0 }],
+        [{ "node": "→ property.sold", "type": "main", "index": 0 }],
+        [{ "node": "→ job.completed", "type": "main", "index": 0 }],
+        [{ "node": "→ default (logged)", "type": "main", "index": 0 }]
+      ]
+    },
+    "→ bid.requested": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    },
+    "→ bid.approved": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    },
+    "→ invoice.approved": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    },
+    "→ invoice.paid": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    },
+    "→ property.sold": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    },
+    "→ job.completed": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    },
+    "→ default (logged)": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

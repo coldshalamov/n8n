@@ -53,6 +53,32 @@ Otherwise drops it into the digest path.
 Wire this by setting `N8N_NEW_EMAIL_WEBHOOK` on the email server to the
 production webhook URL n8n shows you.
 
+### `rehabops-event-router.json`
+**The single inbound endpoint for every dashboard mutation.** Triggered by
+`POST /webhook/rehabops` whenever the dashboard fires an event (the webhook
+URL the dashboard hits is `N8N_WEBHOOK_URL` on the dashboard service).
+
+Flow:
+1. Verify the HMAC-SHA256 signature in `X-RehabOps-Signature` against
+   `N8N_WEBHOOK_SECRET` (set the same secret on the n8n service env vars).
+2. Route on the `event` field — `bid.requested`, `bid.approved`,
+   `invoice.approved`, `invoice.paid`, `property.sold`, `job.completed`,
+   plus a default branch that catches anything else.
+3. Each branch is a placeholder Set node summarizing the action — replace
+   it with the real outbound: HighLevel SMS to `data.jobs[].contractor_id`,
+   Slack alert, accounting webhook, etc.
+
+The full event catalogue is defined in
+`dashboard/lib/n8n.ts` (the `N8nEvent` union type). Every owner action in
+the dashboard fires one of those events through this router.
+
+**Setup:**
+1. Import `rehabops-event-router.json` into n8n.
+2. On the n8n service, set `N8N_WEBHOOK_SECRET` to the same value that's
+   set on `rehab-ops-dashboard` (Render → service → Environment).
+3. Activate the workflow.
+4. (Optional) extend any branch with HighLevel/Slack/email logic.
+
 ## Editing
 
 These templates are starting points. Replace the placeholder relays

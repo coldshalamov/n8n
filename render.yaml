@@ -72,6 +72,10 @@ services:
         sync: false
       - key: CONTRACTOR_REMIND_WEBHOOK
         sync: false
+      # Same value as N8N_WEBHOOK_SECRET on rehab-ops-dashboard so the
+      # rehabops-event-router workflow can verify HMAC signatures.
+      - key: N8N_WEBHOOK_SECRET
+        sync: false
 
   - type: web
     name: rehab-ops-email-server
