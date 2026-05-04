@@ -24,6 +24,15 @@ services:
         sync: false
       - key: SUPABASE_SECRET_KEY
         sync: false
+      # Owner-side mutations POST to this n8n webhook so workflows can fan out
+      # SMS/email via HighLevel, send Slack pings, etc. Optional — when unset,
+      # the dashboard runs offline-of-n8n. Set in Render dashboard.
+      - key: N8N_WEBHOOK_URL
+        sync: false
+      # HMAC-SHA256 secret. When set, every webhook carries
+      # X-RehabOps-Signature so the n8n workflow can verify origin.
+      - key: N8N_WEBHOOK_SECRET
+        sync: false
 
   - type: web
     name: n8n-server
