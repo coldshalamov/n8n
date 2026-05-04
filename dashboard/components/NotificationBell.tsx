@@ -76,7 +76,7 @@ export function NotificationBell({ initial }: { initial: ActivityLog[] }) {
         <Popover.Content
           align="end"
           sideOffset={8}
-          className="z-50 w-96 rounded-2xl border border-line bg-surface p-4 shadow-elevated data-[state=open]:animate-scale-in"
+          className="z-50 w-96 rounded-2xl border border-line bg-surface p-4 shadow-elevated data-[state=open]:animate-fade-in"
         >
           <div className="mb-3 flex items-baseline justify-between">
             <h3 className="text-sm font-medium uppercase tracking-wider text-ink-dim">

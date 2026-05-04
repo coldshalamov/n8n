@@ -58,7 +58,7 @@ export function JobStatusMenu({
         <Popover.Content
           align="start"
           sideOffset={6}
-          className="z-50 w-48 rounded-xl border border-line bg-surface p-1.5 shadow-elevated data-[state=open]:animate-scale-in"
+          className="z-50 w-48 rounded-xl border border-line bg-surface p-1.5 shadow-elevated data-[state=open]:animate-fade-in"
         >
           {ORDER.map((s) => (
             <button

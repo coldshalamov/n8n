@@ -72,7 +72,7 @@ export function CommandPaletteRoot({ properties, contractors }: Props) {
     <RDialog.Root open={open} onOpenChange={setOpen}>
       <RDialog.Portal>
         <RDialog.Overlay className="fixed inset-0 z-40 bg-bg/70 backdrop-blur-sm data-[state=open]:animate-fade-in" />
-        <RDialog.Content className="fixed left-1/2 top-[18%] z-50 w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-surface text-ink shadow-elevated data-[state=open]:animate-scale-in">
+        <RDialog.Content className="fixed left-1/2 top-[18%] z-50 w-[calc(100vw-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-surface text-ink shadow-elevated data-[state=open]:animate-fade-in">
           <RDialog.Title className="sr-only">Command palette</RDialog.Title>
           <RDialog.Description className="sr-only">
             Quick navigation and actions
