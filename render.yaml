@@ -1,9 +1,8 @@
 # Render Blueprint for RehabOps services hosted from this repository.
 #
-# n8n stays on the existing free Render image service. For a reliable demo,
-# wire it to Supabase Postgres with DB_* environment variables in Render.
-# Without DB_* values, n8n falls back to container-local SQLite and can be
-# brittle during Render free-tier cold starts.
+# n8n stays on the existing free Render image service. Keep the health check on
+# / for this image: /health is only valid during startup, while /healthz is only
+# reliable after the editor is fully ready.
 
 services:
   - type: web
@@ -43,13 +42,15 @@ services:
     plan: free
     region: oregon
     autoDeploy: true
-    healthCheckPath: /healthz
+    healthCheckPath: /
     envVars:
       - key: N8N_PORT
         value: "10000"
       - key: PORT
         value: "10000"
       - key: N8N_HOST
+        value: n8n-server-pz47.onrender.com
+      - key: N8N_LISTEN_ADDRESS
         value: 0.0.0.0
       - key: N8N_PROTOCOL
         value: https
