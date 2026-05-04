@@ -3,13 +3,47 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import clsx from 'clsx';
-import { Bot, Boxes, ExternalLink, HardHat, Home, LogOut, Workflow } from 'lucide-react';
+import {
+  Bot,
+  Boxes,
+  ExternalLink,
+  Hammer,
+  HardHat,
+  Home,
+  LogOut,
+  Search,
+  TrendingUp,
+  Workflow,
+} from 'lucide-react';
 import { logout } from '@/app/login/actions';
 import { externalUrl } from '@/lib/format';
+import { fireOpenPalette } from '@/components/CommandPalette';
 
 const NAV = [
-  { href: '/', label: 'Properties', icon: Home, match: (p: string) => p === '/' || p.startsWith('/properties') },
-  { href: '/contractors', label: 'Contractors', icon: HardHat, match: (p: string) => p.startsWith('/contractors') },
+  {
+    href: '/',
+    label: 'Properties',
+    icon: Home,
+    match: (p: string) => p === '/' || p.startsWith('/properties'),
+  },
+  {
+    href: '/jobs',
+    label: 'Jobs',
+    icon: Hammer,
+    match: (p: string) => p.startsWith('/jobs'),
+  },
+  {
+    href: '/contractors',
+    label: 'Contractors',
+    icon: HardHat,
+    match: (p: string) => p.startsWith('/contractors'),
+  },
+  {
+    href: '/reports',
+    label: 'Reports',
+    icon: TrendingUp,
+    match: (p: string) => p.startsWith('/reports'),
+  },
 ];
 
 export function Sidebar({ userEmail }: { userEmail: string | null }) {
@@ -27,6 +61,20 @@ export function Sidebar({ userEmail }: { userEmail: string | null }) {
             Rehab<span className="text-accent-soft">Ops</span>
           </span>
         </Link>
+      </div>
+
+      <div className="px-3 pt-3">
+        <button
+          type="button"
+          onClick={() => fireOpenPalette()}
+          className="flex w-full items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-xs text-ink-dim ring-1 ring-line transition-colors hover:bg-surface-3 hover:text-ink"
+        >
+          <Search className="size-3.5" />
+          <span className="flex-1 text-left">Search · run a command</span>
+          <kbd className="rounded bg-bg/60 px-1.5 py-0.5 text-[10px] ring-1 ring-line">
+            ⌘K
+          </kbd>
+        </button>
       </div>
 
       <nav className="flex-1 p-3 space-y-0.5">
@@ -66,21 +114,18 @@ export function Sidebar({ userEmail }: { userEmail: string | null }) {
         <div className="flex items-center justify-between text-ink-dim">
           <span className="inline-flex items-center gap-1.5">
             <Boxes className="size-3.5 text-accent-soft" />
-            n8n pulse
+            Automation
           </span>
           <span className="rounded-full bg-ok/10 px-2 py-0.5 text-ok ring-1 ring-ok/20">
             live
           </span>
         </div>
-        <div className="mt-2 h-1 rounded-full bg-line">
-          <div className="h-full w-4/5 rounded-full bg-gradient-to-r from-accent to-ok" />
-        </div>
         <div className="flex items-center justify-between border-t border-line pt-2">
           <span className="inline-flex items-center gap-1.5">
             <Bot className="size-3.5 text-info" />
-            OpenClaw
+            Webhooks
           </span>
-          <span className="text-ink-dim">MCP ready</span>
+          <span className="text-ink-dim">n8n bridge</span>
         </div>
       </div>
 
