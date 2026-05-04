@@ -29,11 +29,11 @@ services:
     name: n8n-server
     runtime: image
     image:
-      url: docker.n8n.io/n8nio/n8n:latest
+      url: docker.n8n.io/n8nio/n8n:1.118.1
     plan: free
     region: oregon
     autoDeploy: true
-    healthCheckPath: /healthz
+    healthCheckPath: /
     envVars:
       - key: N8N_PORT
         value: "10000"
@@ -53,8 +53,6 @@ services:
         sync: false
       - key: N8N_PROXY_HOPS
         value: "1"
-      - key: N8N_RUNNERS_GRANT_TOKEN_TTL
-        value: "300"
       - key: GENERIC_TIMEZONE
         value: America/New_York
       - key: TZ
