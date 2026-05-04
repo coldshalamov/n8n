@@ -17,11 +17,8 @@ body {
 
 body {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px),
-    radial-gradient(1100px 700px at -10% -20%, rgba(249, 115, 22, 0.08), transparent 55%),
-    radial-gradient(900px 600px at 110% 110%, rgba(14, 165, 233, 0.065), transparent 50%);
-  background-size: 32px 32px, 32px 32px, auto, auto;
+    radial-gradient(1200px 700px at 8% -10%, rgba(249, 115, 22, 0.07), transparent 55%),
+    radial-gradient(900px 600px at 100% 110%, rgba(14, 165, 233, 0.04), transparent 50%);
   background-attachment: fixed;
   background-repeat: no-repeat;
   background-color: #0a0d12;
@@ -56,6 +53,16 @@ body {
   outline-offset: 3px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @layer utilities {
   .gradient-text {
     background: linear-gradient(135deg, #fb923c 0%, #f97316 45%, #fbbf24 100%);
@@ -66,4 +73,28 @@ body {
   .ring-line {
     --tw-ring-color: #232a36;
   }
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'ss01' 1;
+  }
+  .ring-faint {
+    --tw-ring-color: rgba(255, 255, 255, 0.06);
+  }
+  /* Layout container — every page section uses this for the locked, centered canvas */
+  .canvas {
+    width: 100%;
+    max-width: 1440px;
+    margin-inline: auto;
+  }
+}
+
+/* sonner toast theming */
+[data-sonner-toaster] {
+  --normal-bg: #131820;
+  --normal-border: #232a36;
+  --normal-text: #e8eaed;
+  --success-bg: #131820;
+  --success-text: #22c55e;
+  --error-bg: #131820;
+  --error-text: #ef4444;
 }

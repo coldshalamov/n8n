@@ -4,13 +4,25 @@ import { createClient } from '@/lib/supabase/server';
 import type { Contractor, Job } from '@/lib/db.types';
 import { TradePill } from '@/components/TradePill';
 import { Rating } from '@/components/Rating';
+import { NewContractorButton } from '@/components/dialogs/ContractorDialog';
+import { ContractorFilters } from '@/components/ContractorFilters';
 import { daysUntil } from '@/lib/format';
 
 export const metadata = {
   title: 'Contractors — RehabOps',
 };
 
-export default async function ContractorsPage() {
+type SearchParams = {
+  trade?: string;
+  q?: string;
+};
+
+export default async function ContractorsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
+  const params = (await searchParams) ?? {};
   const supabase = await createClient();
   const [contractorsRes, jobsRes] = await Promise.all([
     supabase
@@ -51,16 +63,33 @@ export default async function ContractorsPage() {
   ).length;
   const licensedContractors = contractors.filter((c) => c.license_number).length;
 
+  const trades = [...new Set(contractors.map((c) => c.trade).filter(Boolean) as string[])].sort();
+
+  // Apply filters
+  const trade = params.trade ?? '';
+  const q = (params.q ?? '').trim().toLowerCase();
+  const filtered = contractors.filter((c) => {
+    if (trade && c.trade !== trade) return false;
+    if (q) {
+      const hay = `${c.company_name} ${c.contact_name ?? ''} ${c.email ?? ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-7 animate-fade-up">
-      <header>
-        <div className="text-xs uppercase tracking-[0.2em] text-ink-faint">Trade network</div>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          <span className="gradient-text">{contractors.length}</span> contractors
-        </h1>
-        <p className="mt-1 text-sm text-ink-dim">
-          Sub-contractors and trades by performance.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="text-xs uppercase tracking-[0.2em] text-ink-faint">Trade network</div>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+            <span className="gradient-text num">{contractors.length}</span> contractors
+          </h1>
+          <p className="mt-1 text-sm text-ink-dim">
+            Sub-contractors and trades by performance.
+          </p>
+        </div>
+        <NewContractorButton />
       </header>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -70,23 +99,24 @@ export default async function ContractorsPage() {
         <Summary label="Licensed" value={licensedContractors} icon={<ShieldCheck className="size-4" />} />
       </section>
 
+      <ContractorFilters trades={trades} />
+
       {contractors.length === 0 ? (
-        <div className="rounded-xl bg-surface ring-1 ring-line p-10 text-center">
-          <h2 className="text-lg font-medium">No contractors yet</h2>
-          <p className="mt-1 text-sm text-ink-dim">
-            Run <code className="rounded bg-surface-2 px-1.5 py-0.5">seed.sql</code> to load samples.
-          </p>
+        <EmptyState />
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-line bg-surface-2/40 p-8 text-center text-sm text-ink-faint">
+          No contractors match your filter.
         </div>
       ) : (
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {contractors.map((c) => {
+          {filtered.map((c) => {
             const active = activeByContractor.get(c.id) ?? 0;
             const total = totalByContractor.get(c.id) ?? 0;
             return (
               <Link
                 key={c.id}
                 href={`/contractors/${c.id}`}
-                className="group rounded-xl bg-surface ring-1 ring-line shadow-card p-5 transition-all hover:ring-accent/40 hover:shadow-glow hover:-translate-y-0.5"
+                className="group rounded-2xl bg-surface ring-1 ring-line shadow-card p-5 transition-all hover:ring-accent/40 hover:shadow-glow hover:-translate-y-0.5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -94,12 +124,8 @@ export default async function ContractorsPage() {
                       <HardHat className="size-5" />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-medium text-ink truncate">
-                        {c.company_name}
-                      </div>
-                      <div className="text-xs text-ink-faint truncate">
-                        {c.contact_name ?? '—'}
-                      </div>
+                      <div className="font-medium text-ink truncate">{c.company_name}</div>
+                      <div className="text-xs text-ink-faint truncate">{c.contact_name ?? '—'}</div>
                     </div>
                   </div>
                   <Rating value={c.rating} />
@@ -117,7 +143,11 @@ export default async function ContractorsPage() {
                 <div className="mt-4 grid grid-cols-3 gap-2 pt-3 border-t border-line">
                   <Stat label="Active" value={active} accent={active > 0} />
                   <Stat label="Total jobs" value={total} />
-                  <Stat label="Load" value={active > 2 ? 'Hot' : active > 0 ? 'Open' : 'Ready'} accent={active === 0} />
+                  <Stat
+                    label="Load"
+                    value={active > 2 ? 'Hot' : active > 0 ? 'Open' : 'Ready'}
+                    accent={active === 0}
+                  />
                 </div>
 
                 {(c.email || c.phone || c.insurance_expiry) && (
@@ -155,6 +185,23 @@ export default async function ContractorsPage() {
   );
 }
 
+function EmptyState() {
+  return (
+    <div className="rounded-2xl bg-surface ring-1 ring-line p-10 text-center">
+      <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-surface-2 ring-1 ring-line text-ink-faint">
+        <HardHat className="size-6" />
+      </div>
+      <h2 className="mt-4 text-lg font-medium">Build your trade bench</h2>
+      <p className="mt-1 text-sm text-ink-dim">
+        Add contractors so you can request bids, track jobs, and pay invoices through the platform.
+      </p>
+      <div className="mt-5 flex justify-center">
+        <NewContractorButton size="lg" />
+      </div>
+    </div>
+  );
+}
+
 function Summary({
   label,
   value,
@@ -167,12 +214,12 @@ function Summary({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-surface p-4 shadow-card ring-1 ring-line">
+    <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line">
       <div className="flex items-start justify-between gap-3">
         <div className="text-xs uppercase tracking-wider text-ink-dim">{label}</div>
         <div className={accent ? 'text-accent-soft' : 'text-ink-dim'}>{icon}</div>
       </div>
-      <div className="mt-2 text-2xl font-semibold tabular-nums text-ink">{value}</div>
+      <div className="num mt-2 text-2xl font-semibold text-ink">{value}</div>
     </div>
   );
 }
@@ -189,11 +236,7 @@ function Stat({
   return (
     <div>
       <div className="text-[10px] uppercase tracking-wider text-ink-faint">{label}</div>
-      <div
-        className={`text-sm font-semibold tabular-nums ${
-          accent ? 'text-accent-soft' : 'text-ink'
-        }`}
-      >
+      <div className={`num text-sm font-semibold ${accent ? 'text-accent-soft' : 'text-ink'}`}>
         {value}
       </div>
     </div>

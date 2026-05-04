@@ -11,6 +11,7 @@ import {
   Hammer,
   MapPin,
   ReceiptText,
+  Send,
   TrendingUp,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
@@ -23,11 +24,18 @@ import type {
   Job,
   Property,
 } from '@/lib/db.types';
-import { PropertyStatusBadge, JobStatusBadge } from '@/components/StatusBadge';
-import { BudgetBar } from '@/components/BudgetBar';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { TradePill } from '@/components/TradePill';
-import { daysUntil, formatLocation, money, pct, signedMoney } from '@/lib/format';
+import { PropertyStatusMenu } from '@/components/PropertyStatusMenu';
+import { JobStatusMenu } from '@/components/JobStatusMenu';
+import { EditPropertyButton } from '@/components/dialogs/PropertyDialog';
+import { NewJobButton, EditJobButton } from '@/components/dialogs/JobDialog';
+import { RequestBidsButton } from '@/components/dialogs/RequestBidsDialog';
+import { BidActions } from '@/components/BidActions';
+import { InvoiceActions } from '@/components/InvoiceActions';
+import { BudgetEditor } from '@/components/BudgetEditor';
+import { NoteComposer } from '@/components/NoteComposer';
+import { daysUntil, formatLocation, money, signedMoney } from '@/lib/format';
 
 export default async function PropertyDetailPage({
   params,
@@ -37,7 +45,7 @@ export default async function PropertyDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [propertyRes, jobsRes, budgetRes, activityRes, bidsRes, invoicesRes, contractorsRes] =
+  const [propertyRes, jobsRes, budgetRes, activityRes, bidsRes, invoicesRes, contractorsRes, allPropertiesRes] =
     await Promise.all([
       supabase.from('properties').select('*').eq('id', id).single(),
       supabase
@@ -51,10 +59,11 @@ export default async function PropertyDetailPage({
         .select('*')
         .eq('property_id', id)
         .order('created_at', { ascending: false })
-        .limit(15),
-      supabase.from('bids').select('*'),
+        .limit(25),
+      supabase.from('bids').select('*').order('submitted_at', { ascending: false }),
       supabase.from('invoices').select('*'),
-      supabase.from('contractors').select('*'),
+      supabase.from('contractors').select('*').order('company_name'),
+      supabase.from('properties').select('id,address').order('address'),
     ]);
 
   if (propertyRes.error || !propertyRes.data) notFound();
@@ -65,6 +74,7 @@ export default async function PropertyDetailPage({
   const allBids = (bidsRes.data ?? []) as Bid[];
   const allInvoices = (invoicesRes.data ?? []) as Invoice[];
   const contractors = (contractorsRes.data ?? []) as Contractor[];
+  const allProperties = (allPropertiesRes.data ?? []) as Pick<Property, 'id' | 'address'>[];
 
   const jobIds = new Set(jobs.map((j) => j.id));
   const propertyBids = allBids.filter((b) => jobIds.has(b.job_id));
@@ -83,18 +93,36 @@ export default async function PropertyDetailPage({
   const unpaidInvoices = propertyInvoices.filter((i) => i.status !== 'paid');
   const openJobs = jobs.filter((j) => j.status !== 'complete' && j.status !== 'paid');
 
+  const contractorOptions = contractors.map((c) => ({
+    id: c.id,
+    company_name: c.company_name,
+    trade: c.trade,
+    rating: c.rating,
+  }));
+
   return (
     <div className="space-y-8 animate-fade-up">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink"
-      >
-        <ArrowLeft className="size-3.5" />
-        Portfolio
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-xs text-ink-dim hover:text-ink"
+        >
+          <ArrowLeft className="size-3.5" />
+          Portfolio
+        </Link>
+        <div className="flex items-center gap-2">
+          <RequestBidsButton propertyId={property.id} contractors={contractorOptions} />
+          <NewJobButton
+            properties={allProperties}
+            contractors={contractorOptions}
+            defaultPropertyId={property.id}
+          />
+          <EditPropertyButton property={property} />
+        </div>
+      </div>
 
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-xl ring-1 ring-line shadow-card">
+      <section className="relative overflow-hidden rounded-2xl ring-1 ring-line shadow-card">
         <div className="relative h-64 sm:h-80 lg:h-96 bg-surface-2">
           {property.hero_image_url ? (
             <Image
@@ -113,7 +141,7 @@ export default async function PropertyDetailPage({
           <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-6 lg:p-8">
             <div className="mb-3">
-              <PropertyStatusBadge status={property.status} size="md" />
+              <PropertyStatusMenu propertyId={property.id} status={property.status} />
             </div>
             <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight">
               {property.address}
@@ -125,11 +153,15 @@ export default async function PropertyDetailPage({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-line">
-          <Metric label="Beds"          value={property.bedrooms ?? '—'} icon={<Bed className="size-3.5" />} />
-          <Metric label="Baths"         value={property.bathrooms ?? '—'} icon={<Bath className="size-3.5" />} />
-          <Metric label="Sqft"          value={property.square_feet?.toLocaleString() ?? '—'} icon={<Square className="size-3.5" />} />
-          <Metric label="Purchase"      value={money(property.purchase_price)} />
-          <Metric label="Target"        value={money(property.target_sale_price)} accent />
+          <Metric label="Beds" value={property.bedrooms ?? '—'} icon={<Bed className="size-3.5" />} />
+          <Metric label="Baths" value={property.bathrooms ?? '—'} icon={<Bath className="size-3.5" />} />
+          <Metric
+            label="Sqft"
+            value={property.square_feet?.toLocaleString() ?? '—'}
+            icon={<Square className="size-3.5" />}
+          />
+          <Metric label="Purchase" value={money(property.purchase_price)} />
+          <Metric label="Target" value={money(property.target_sale_price)} accent />
           <Metric label="Target margin" value={money(targetMargin)} />
         </div>
       </section>
@@ -160,57 +192,35 @@ export default async function PropertyDetailPage({
         />
       </section>
 
-      {/* Budget summary */}
-      <section className="rounded-xl bg-surface ring-1 ring-line p-5 lg:p-6 shadow-card">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <h2 className="text-lg font-semibold tracking-tight">Budget</h2>
-          <div className="text-sm tabular-nums">
-            <span className="text-ink">{money(spent)}</span>
-            <span className="text-ink-faint"> spent of </span>
-            <span className="text-ink">{money(totalBudget)}</span>
-            <span className="ml-2 rounded-full bg-surface-2 px-2 py-0.5 text-xs">
-              {pct(spent, totalBudget)}%
-            </span>
-          </div>
-        </div>
-        <BudgetBar spent={spent} budget={totalBudget} showLabels={false} />
-
-        {budget.length > 0 && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2.5">
-            {budget.map((b) => {
-              const p = pct(Number(b.actual), Number(b.estimated));
-              const overTone =
-                p >= 100 ? 'text-bad' : p >= 90 ? 'text-warn' : 'text-ink';
-              return (
-                <div key={b.id} className="flex items-center gap-3">
-                  <div className="w-28 shrink-0 text-sm text-ink-dim capitalize">
-                    {b.category}
-                  </div>
-                  <div className="flex-1">
-                    <BudgetBar
-                      spent={Number(b.actual)}
-                      budget={Number(b.estimated)}
-                      showLabels={false}
-                      compact
-                    />
-                  </div>
-                  <div className={`w-32 text-right text-xs tabular-nums ${overTone}`}>
-                    {money(Number(b.actual))}
-                    <span className="text-ink-faint"> / {money(Number(b.estimated))}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {/* Budget */}
+      <section className="rounded-2xl bg-surface ring-1 ring-line p-5 lg:p-6 shadow-card">
+        <BudgetEditor
+          propertyId={property.id}
+          items={budget}
+          totalBudget={totalBudget}
+          totalSpent={spent}
+        />
       </section>
 
       {/* Two column: jobs & bids on left, activity on right */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Section title="Jobs" count={jobs.length} icon={<Hammer className="size-4" />}>
+          <Section
+            title="Jobs"
+            count={jobs.length}
+            icon={<Hammer className="size-4" />}
+            action={
+              <NewJobButton
+                size="sm"
+                label="Add"
+                properties={allProperties}
+                contractors={contractorOptions}
+                defaultPropertyId={property.id}
+              />
+            }
+          >
             {jobs.length === 0 ? (
-              <Empty>No jobs assigned to this property yet.</Empty>
+              <Empty>No jobs yet. Add one or fan out a bid request.</Empty>
             ) : (
               <div className="divide-y divide-line">
                 {jobs.map((j) => {
@@ -221,12 +231,12 @@ export default async function PropertyDetailPage({
                       className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 first:pt-0 last:pb-0"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium text-ink">{j.title}</span>
                           <TradePill trade={j.trade} />
-                          <JobStatusBadge status={j.status} />
+                          <JobStatusMenu jobId={j.id} status={j.status} />
                         </div>
-                        <div className="mt-1 text-xs text-ink-faint flex items-center gap-3 flex-wrap">
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-ink-faint">
                           {c && (
                             <Link
                               href={`/contractors/${c.id}`}
@@ -247,13 +257,20 @@ export default async function PropertyDetailPage({
                           )}
                         </div>
                       </div>
-                      <div className="text-right sm:min-w-32 tabular-nums">
-                        <div className="text-sm text-ink">
-                          {money(j.actual_cost ?? j.estimated_cost)}
+                      <div className="flex items-center gap-3">
+                        <div className="text-right num">
+                          <div className="text-sm text-ink">
+                            {money(j.actual_cost ?? j.estimated_cost)}
+                          </div>
+                          <div className="text-xs text-ink-faint">
+                            {j.actual_cost != null ? 'actual' : 'estimated'}
+                          </div>
                         </div>
-                        <div className="text-xs text-ink-faint">
-                          {j.actual_cost != null ? 'actual' : 'estimated'}
-                        </div>
+                        <EditJobButton
+                          job={j}
+                          properties={allProperties}
+                          contractors={contractorOptions}
+                        />
                       </div>
                     </div>
                   );
@@ -264,9 +281,9 @@ export default async function PropertyDetailPage({
 
           {propertyBids.length > 0 && (
             <Section
-              title="Open bids"
+              title="Bids"
               count={propertyBids.length}
-              icon={<CircleDollarSign className="size-4" />}
+              icon={<Send className="size-4" />}
             >
               <div className="divide-y divide-line">
                 {propertyBids.map((b) => {
@@ -275,28 +292,31 @@ export default async function PropertyDetailPage({
                   return (
                     <div
                       key={b.id}
-                      className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 first:pt-0 last:pb-0"
+                      className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">
+                        <div className="text-sm font-medium text-ink">
                           {c?.company_name ?? 'Unknown contractor'}
                         </div>
                         <div className="text-xs text-ink-faint">
-                          {j?.title} · {b.estimated_days ?? '—'} days
+                          {j?.title ?? 'Bid'} · {b.estimated_days ?? '—'} days
                         </div>
                         {b.scope_of_work && (
-                          <div className="mt-1 text-xs text-ink-dim">
+                          <div className="mt-1 line-clamp-2 text-xs text-ink-dim">
                             {b.scope_of_work}
                           </div>
                         )}
                       </div>
-                      <div className="text-right tabular-nums">
-                        <div className="text-base font-semibold text-accent-soft">
-                          {money(b.amount)}
+                      <div className="flex items-center gap-3">
+                        <div className="text-right num">
+                          <div className="text-base font-semibold text-accent-soft">
+                            {money(b.amount)}
+                          </div>
+                          <div className="text-xs capitalize text-ink-faint">
+                            {b.status}
+                          </div>
                         </div>
-                        <div className="text-xs text-ink-faint capitalize">
-                          {b.status}
-                        </div>
+                        <BidActions bidId={b.id} status={b.status} />
                       </div>
                     </div>
                   );
@@ -326,20 +346,27 @@ export default async function PropertyDetailPage({
                   return (
                     <div
                       key={inv.id}
-                      className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                      className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="text-sm">
-                          <span className="font-medium">{c?.company_name ?? 'Unknown'}</span>
+                          <span className="font-medium">
+                            {c?.company_name ?? 'Unknown'}
+                          </span>
                           {inv.invoice_number && (
                             <span className="text-ink-faint"> · {inv.invoice_number}</span>
                           )}
                         </div>
                         <div className="text-xs text-ink-faint">{j?.title}</div>
                       </div>
-                      <div className="text-right tabular-nums">
-                        <div className="text-sm font-medium">{money(inv.amount)}</div>
-                        <div className={`text-xs capitalize ${tone}`}>{inv.status}</div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right num">
+                          <div className="text-sm font-medium text-ink">
+                            {money(inv.amount)}
+                          </div>
+                          <div className={`text-xs capitalize ${tone}`}>{inv.status}</div>
+                        </div>
+                        <InvoiceActions invoiceId={inv.id} status={inv.status} />
                       </div>
                     </div>
                   );
@@ -351,11 +378,14 @@ export default async function PropertyDetailPage({
 
         <aside className="space-y-6">
           <Section title="Activity">
-            <ActivityFeed items={activity} />
+            <NoteComposer propertyId={property.id} />
+            <div className="mt-4">
+              <ActivityFeed items={activity} />
+            </div>
           </Section>
           {property.notes && (
             <Section title="Notes">
-              <p className="text-sm text-ink-dim leading-relaxed whitespace-pre-line">
+              <p className="whitespace-pre-line text-sm leading-relaxed text-ink-dim">
                 {property.notes}
               </p>
             </Section>
@@ -384,7 +414,7 @@ function Metric({
         {label}
       </div>
       <div
-        className={`mt-1 text-base font-semibold tabular-nums ${
+        className={`num mt-1 text-base font-semibold ${
           accent ? 'text-accent-soft' : 'text-ink'
         }`}
       >
@@ -406,19 +436,15 @@ function MetricCard({
   tone?: 'default' | 'ok' | 'warn';
 }) {
   const toneClass =
-    tone === 'ok'
-      ? 'text-ok'
-      : tone === 'warn'
-        ? 'text-warn'
-        : 'text-ink-dim';
+    tone === 'ok' ? 'text-ok' : tone === 'warn' ? 'text-warn' : 'text-ink-dim';
 
   return (
-    <div className="rounded-xl bg-surface p-4 shadow-card ring-1 ring-line">
+    <div className="rounded-2xl bg-surface p-4 shadow-card ring-1 ring-line">
       <div className="flex items-start justify-between gap-3">
         <div className="text-xs uppercase tracking-wider text-ink-dim">{label}</div>
         {icon && <div className={toneClass}>{icon}</div>}
       </div>
-      <div className="mt-2 text-xl font-semibold tabular-nums text-ink">{value}</div>
+      <div className="num mt-2 text-xl font-semibold text-ink">{value}</div>
     </div>
   );
 }
@@ -427,23 +453,26 @@ function Section({
   title,
   count,
   icon,
+  action,
   children,
 }: {
   title: string;
   count?: number;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl bg-surface ring-1 ring-line p-5 lg:p-6 shadow-card">
-      <div className="mb-4 flex items-baseline justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-medium text-ink-dim uppercase tracking-wider">
+    <section className="rounded-2xl bg-surface ring-1 ring-line p-5 lg:p-6 shadow-card">
+      <div className="mb-4 flex items-baseline justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-ink-dim">
           {icon}
           {title}
+          {count != null && (
+            <span className="num text-xs text-ink-faint">{count}</span>
+          )}
         </h3>
-        {count != null && (
-          <span className="text-xs text-ink-faint tabular-nums">{count}</span>
-        )}
+        {action}
       </div>
       {children}
     </section>

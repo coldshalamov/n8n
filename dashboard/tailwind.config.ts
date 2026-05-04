@@ -6,7 +6,7 @@ export default {
     extend: {
       colors: {
         bg: '#0a0d12',
-        surface: { DEFAULT: '#131820', 2: '#1a212c' },
+        surface: { DEFAULT: '#131820', 2: '#1a212c', 3: '#212935' },
         line: '#232a36',
         ink: { DEFAULT: '#e8eaed', dim: '#9aa3b2', faint: '#6b7280' },
         accent: { DEFAULT: '#f97316', soft: '#fb923c', glow: '#fbbf24' },
@@ -16,11 +16,17 @@ export default {
         info: '#3b82f6',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-geist-sans)', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      fontFeatureSettings: {
+        tabular: '"tnum" 1, "ss01" 1',
       },
       boxShadow: {
         glow: '0 0 0 1px rgba(249,115,22,0.18), 0 8px 30px -10px rgba(249,115,22,0.35)',
         card: '0 1px 0 rgba(255,255,255,0.05) inset, 0 0 0 1px rgba(255,255,255,0.035), 0 18px 40px -28px rgba(0,0,0,0.9)',
+        elevated:
+          '0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 1px rgba(255,255,255,0.06), 0 24px 60px -20px rgba(0,0,0,0.8)',
       },
       backgroundImage: {
         'grid-faint':
@@ -31,9 +37,19 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'scale-in': {
+          '0%': { opacity: '0', transform: 'scale(0.96)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
       },
       animation: {
         'fade-up': 'fade-up 0.4s ease-out forwards',
+        'fade-in': 'fade-in 0.2s ease-out forwards',
+        'scale-in': 'scale-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       },
     },
   },

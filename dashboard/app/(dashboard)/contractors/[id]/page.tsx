@@ -6,6 +6,7 @@ import type { Contractor, Invoice, Job, Property } from '@/lib/db.types';
 import { JobStatusBadge } from '@/components/StatusBadge';
 import { TradePill } from '@/components/TradePill';
 import { Rating } from '@/components/Rating';
+import { EditContractorButton } from '@/components/dialogs/ContractorDialog';
 import { daysUntil, money } from '@/lib/format';
 
 export default async function ContractorDetailPage({
@@ -83,19 +84,22 @@ export default async function ContractorDetailPage({
               </div>
             </div>
           </div>
-          <div className="text-sm text-ink-dim space-y-1.5">
-            {c.email && (
-              <div className="flex items-center gap-2">
-                <Mail className="size-3.5 text-ink-faint" />
-                {c.email}
-              </div>
-            )}
-            {c.phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="size-3.5 text-ink-faint" />
-                {c.phone}
-              </div>
-            )}
+          <div className="flex flex-col items-end gap-3">
+            <EditContractorButton contractor={c} />
+            <div className="text-sm text-ink-dim space-y-1.5">
+              {c.email && (
+                <div className="flex items-center gap-2">
+                  <Mail className="size-3.5 text-ink-faint" />
+                  {c.email}
+                </div>
+              )}
+              {c.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="size-3.5 text-ink-faint" />
+                  {c.phone}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
